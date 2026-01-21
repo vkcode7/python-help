@@ -445,8 +445,61 @@ def test_multiple_inheritance():
         exception_has_been_handled = Tru
 ```
 
-custom exception:
+### catching multiple exceptions:
 ```py
+try:
+    num = int("abc")          # ValueError
+    result = 10 / 0           # ZeroDivisionError
+except (ValueError, ZeroDivisionError) as e:
+    print(f"Error occurred: {e}")
+```
+
+### else and finally block:
+else → runs only if no exception occurred <br>
+finally → runs always (cleanup code)
+```py
+try:
+    file = open("data.txt", "r")
+    content = file.read()
+except FileNotFoundError:
+    print("File not found!")
+else:
+    print("File read successfully!")
+    print(content[:50])     # first 50 chars
+finally:
+    if 'file' in locals():
+        file.close()
+        print("File closed.")
+```
+
+### raising your own
+```py
+def withdraw(balance, amount):
+    if amount > balance:
+        raise ValueError("Insufficient funds!")
+    if amount <= 0:
+        raise ValueError("Amount must be positive!")
+    
+    return balance - amount
+
+try:
+    new_balance = withdraw(100, 150)
+except ValueError as e:
+    print(f"Transaction failed: {e}")
+```
+
+### custom exception:
+```py
+
+class InsufficientFundsError(Exception):
+    """Raised when withdrawal amount exceeds balance"""
+    pass
+
+def withdraw(balance, amount):
+    if amount > balance:
+        raise InsufficientFundsError(f"Cannot withdraw ${amount}. Balance: ${balance}")
+    return balance - amount
+
 def test_user_defined_exception():
     """User-defined Exceptions"""
 
@@ -469,4 +522,162 @@ def test_user_defined_exception():
         custom_exception_is_caught = True
 
     assert custom_exception_is_caught
+```
+
+## public and private
+Public, Private, and Protected variables in Python are conventions, not strict rules enforced by the language.
+
+Python uses naming conventions to signal to other developers (and yourself) how a variable or method should be treated regarding access and modification.
+
+### public
+Everything without any leading underscore is public by default.
+```py
+class Portfolio:
+    def __init__(self):
+        self.cash = 10000.0          # public
+        self.positions = {}          # public
+
+    def add_stock(self, ticker, shares):
+        self.positions[ticker] = shares
+
+p = Portfolio()
+print(p.cash)           # 10000.0 → fine
+p.cash = 5000.0         # allowed
+print(p.positions)      # {} → allowed
+```
+
+### Protected Variables (Single Underscore _)
+The single leading underscore _ is a convention that says:
+
+"This is intended for internal use within the class or module. Please don't touch it from outside unless you really know what you're doing."
+
+Python does not prevent access — it's just a signal to other programmers.
+
+```py
+class Stock:
+    def __init__(self, ticker, price):
+        self.ticker = ticker
+        self._current_price = price      # protected
+        self._last_updated = "2026-01-21"
+
+    def update_price(self, new_price):
+        self._current_price = new_price
+        self._last_updated = "now"
+
+s = Stock("AAPL", 245.67)
+print(s._current_price)         # 245.67 → technically works, but...
+# → Developers should treat this as "don't touch"
+```
+
+### Private Variables (Double Underscore __) – Name Mangling
+Double leading underscore triggers name mangling — Python automatically renames the attribute to make it harder (but not impossible) to access from outside the class.
+
+```py
+class BrokerAccount:
+    def __init__(self, account_id, balance):
+        self.account_id = account_id
+        self.__balance = balance          # private
+        self.__api_key = "secret123"      # private
+
+    def get_balance(self):
+        return self.__balance
+
+    def _internal_update(self, amount):
+        self.__balance += amount
+
+acc = BrokerAccount("ACC123", 50000)
+
+print(acc.account_id)           # ACC123 → public, fine
+print(acc.get_balance())        # 50000 → fine (via method)
+# print(acc.__balance)          # AttributeError!
+
+# But... you can still access it if you really want (name mangled)
+print(acc._BrokerAccount__balance)   # 50000 → works, but please don't do this
+```
+
+What Python actually does:
+
+- __balance inside the class becomes _BrokerAccount__balance
+- This prevents accidental name clashes in subclasses (inheritance safety)
+
+Real rule of thumb:
+
+- Use __ when you want name mangling (mostly for avoiding conflicts in inheritance)
+- Use it sparingly — most Python developers prefer _ for "protected" and document "don't touch" in docstrings/comments.
+
+
+### properties @property + @setter
+
+Use properties @property + @setter instead of raw private attributes when you need controlled access:
+
+Python properties (using the @property decorator) are a clean and powerful way to:
+
+- Control access to an attribute (make it read-only, computed, or validated)
+- Keep the public interface simple (users still use obj.price instead of obj.get_price())
+- Hide the implementation details (you can change how the value is stored/calculated without breaking existing code)
+
+```py
+class Account:
+    def __init__(self):
+        self._balance = 0.0
+
+    @property
+    def balance(self):
+        return self._balance
+
+    @balance.setter
+    def balance(self, value):
+        if value < 0:
+            raise ValueError("Balance cannot be negative")
+        self._balance = value
+```
+
+They let you turn a simple attribute access into a method call under the hood, while keeping the syntax looking like a normal variable.
+
+Core Idea – Three Main Parts
+
+- Getter   → @property decorator (makes reading the attribute call a method)
+- Setter   → @name.setter decorator (makes assignment obj.attr = value call a method)
+- Deleter  → @name.deleter (optional – called when del obj.attr)
+
+Classic Example – Bank Account Balance
+
+```py
+class BankAccount:
+    def __init__(self, owner, initial_balance=0.0):
+        self._balance = initial_balance      # protected (internal storage)
+        self.owner = owner
+
+    @property
+    def balance(self):
+        """Read-only access to balance with nice formatting."""
+        return f"${self._balance:,.2f}"
+
+    @balance.setter
+    def balance(self, value):
+        """Control what can be assigned to balance."""
+        if not isinstance(value, (int, float)):
+            raise TypeError("Balance must be a number")
+        if value < 0:
+            raise ValueError("Balance cannot be negative!")
+        self._balance = float(value)          # store the real value
+
+    @balance.deleter
+    def balance(self):
+        print("Balance deleted – account frozen?")
+        self._balance = 0.0
+
+
+# Usage
+acc = BankAccount("VK", 5000)
+
+print(acc.balance)          # $5,000.00     ← looks like attribute, calls getter
+acc.balance = 7500          # calls setter → validates & stores
+print(acc.balance)          # $7,500.00
+
+# These fail nicely:
+# acc.balance = -100       → ValueError
+# acc.balance = "thousand" → TypeError
+
+del acc.balance             # calls deleter → prints message
 ```
