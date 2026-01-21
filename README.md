@@ -88,8 +88,17 @@ result = None
 # Optional (shorthand for X | None)
 from typing import Optional
 
-username: Optional[str] = "vkcode7"
-username = None                     # valid
+username: Optional[str] = "vkcode7"  # ✓ Valid (string)
+username = None                       # ✓ Valid (None)
+# username = 123                      # ✗ Invalid (not str or None)
+
+# Optional[T] is just shorthand for Union[T, None]
+# These are EXACTLY the same:
+name1: Optional[str] = None
+name2: Union[str, None] = None
+
+# In Python 3.10+, these are also the same:
+name3: str | None = None
 
 # Literal (very specific allowed values) ─────────────────────────────────
 from typing import Literal
