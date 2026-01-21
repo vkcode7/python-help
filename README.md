@@ -145,6 +145,20 @@ Identity Operators (is, is not)
 Membership Operators (in, not in)
 ```
 
+**Python Does NOT Have ++ or -- Operators**
+```python
+# ❌ THESE DON'T WORK IN PYTHON
+# x++   # SyntaxError
+# ++x   # Not what you think! ++x is interpreted as +(+x); Which is just: positive of positive x = x
+# x--   # SyntaxError
+# --x   # Not what you think! --x is seen as: -(-x) = -(-5) = 5
+
+# ✅ USE THESE INSTEAD
+x = 5
+x += 1  # Increment by 1
+x -= 1  # Decrement by 1
+```
+
 ## for loop
 ```py
 # Example: Demonstrating for loops with str, list, dict, tuple, set
