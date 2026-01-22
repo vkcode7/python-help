@@ -142,6 +142,13 @@ Assignment Operators (=, +=, -=, /=, //= etc.)
 Comparison Operator (==, !=, >, <, >=, <=)
 Logical Operators (and, or, not)
 Identity Operators (is, is not)
+a = [1,2,3]
+b = [1,2,3]
+assert a == b #True
+assert a is not b #True as addresses are different
+print(id(a)) #prints address
+print(id(b))
+
 Membership Operators (in, not in)
 ```
 
